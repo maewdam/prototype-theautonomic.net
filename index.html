@@ -39,8 +39,13 @@ const S={page:'home',dnd:false,mur:false,scene:'welcome',
 const NAV=[['home','Home','<path d="M3 11l9-8 9 8M5 10v10h14V10"/>'],['light','Lighting','<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/>'],['clim','Climate','<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/>'],['curt','Curtains','<path d="M3 4h18M5 4v16M19 4v16M5 8c3 1 4 4 3 12M19 8c-3 1-4 4-3 12"/>'],['tv','TV','<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/>']];
 const tab=(items,cur,act)=>`<div class="pill">${items.map(t=>`<button class="${cur===t[0]?'on':''}" data-a="${act}" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>`;
 const hhmm=()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cleanName=t=>String(t||'').replace(/[\u0000-\u001f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,28);
+(function(){let n='';try{const q=new URLSearchParams(location.search);n=cleanName(q.get('name')||q.get('guest'));if(n){try{localStorage.setItem('guestName',n)}catch(e){}}}catch(e){}
+if(!n){try{n=cleanName(localStorage.getItem('guestName'))}catch(e){}}S.guest=n;S.editing=false})();
+function saveGuest(v){S.guest=cleanName(v);S.editing=false;try{S.guest?localStorage.setItem('guestName',S.guest):localStorage.removeItem('guestName')}catch(e){}render()}
 const greet=()=>{const h=new Date().getHours();return h>=5&&h<12?'Good morning':h>=12&&h<17?'Good afternoon':'Good evening'};
-const lbl=v=>v===0?'Open':v===100?'Closed':'Half';
+const lbl=v=>v===0?'Open':v>=100?'Closed':v===50?'Half':'Stopped';
 function sidebar(){
  const tg=(k,t)=>`<button data-a="tg" data-v="${k}" aria-pressed="${S[k]}" style="display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 18px;border-radius:14px;border:1px solid #34343A;font-size:16px;font-weight:500;background:${S[k]?'#F28C38':'transparent'};color:${S[k]?'#1B1006':'#F3EEE8'}"><span>${t}</span><span style="font-size:13px;letter-spacing:.1em">${S[k]?'ON':'OFF'}</span></button>`;
  return `<nav style="width:248px;height:834px;box-sizing:border-box;flex-shrink:0;background:#121214;border-right:1px solid #26262B;padding:36px 20px 28px;display:flex;flex-direction:column;gap:8px">
@@ -52,9 +57,9 @@ function home(){
  const sc=[['welcome','Welcome','All villa lights','90 %'],['relax','Relax','Warm, low lights','30 %'],['night','Night light','Bedside glow only','10 %'],['pool','Pool','Pool & terrace','Casual']];
  const cs=S.cur;const cl=(r)=>lbl(cs[r].curtain);
  return `<main style="flex-grow:1;box-sizing:border-box;padding:48px 48px 40px;display:flex;flex-direction:column;gap:32px">
- <header><h1 style="margin:0;font-size:44px;font-weight:300"><span id="greet">${greet()}</span>, [GUEST NAME]</h1><p style="margin:10px 0 0;font-size:18px;color:#A8A096">Choose how you would like the villa to feel.</p></header>
+ <header><h1 style="margin:0;font-size:44px;font-weight:300"><span id="greet">${greet()}</span>, ${S.editing?`<input id="gin" value="${esc(S.guest)}" maxlength="28" placeholder="Your name" autocomplete="off" spellcheck="false" style="font:inherit;color:#F28C38;background:transparent;border:0;border-bottom:2px solid #F28C38;outline:0;width:380px;padding:0">`:`<span id="gn" role="button" tabindex="0" data-a="gedit" title="Tap to personalise" style="cursor:pointer;color:${S.guest?'#F3EEE8':'#F28C38'};border-bottom:2px dashed rgba(242,140,56,.55)">${esc(S.guest||'Guest')}</span>`}</h1><p style="margin:10px 0 0;font-size:18px;color:#A8A096">Choose how you would like the villa to feel.${S.guest||S.editing?'':' <span style="color:#7D766C">Tap the name to make this screen yours.</span>'}</p></header>
  <section><h2 class="sec" style="margin-bottom:16px">SCENES</h2><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
- ${sc.map(s=>{const on=S.scene===s[0];return `<button data-a="scene" data-v="${s[0]}" style="height:156px;box-sizing:border-box;border-radius:20px;border:1px solid #2C2C31;padding:20px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;background:${on?'#F28C38':'#17171A'};color:${on?'#1B1006':'#F3EEE8'}"><span style="font-size:26px;font-weight:400">${s[1]}</span><span style="display:flex;flex-direction:column;gap:4px;font-size:15px;color:${on?'#3A230B':'#A8A096'}"><span>${s[2]}</span><span style="font-weight:500">${s[3]}</span></span></button>`}).join('')}</div></section>
+ ${sc.map(s=>{const on=S.scene===s[0];return `<button data-a="scene" data-v="${s[0]}" style="height:156px;box-sizing:border-box;border-radius:20px;border:1px solid #2C2C31;padding:20px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;background:${on?'#F28C38':'#17171A'};color:${on?'#1B1006':'#F3EEE8'}"><span style="font-size:26px;font-weight:400">${s[1]}</span><span style="display:flex;flex-direction:column;gap:4px;font-size:15px;color:${on?'#3A230B':'#A8A096'}"><span>${s[2]}</span><span style="font-weight:500">${s[3]}</span></span></button>`}).join('')}</div><p style="margin:12px 0 0;font-size:13px;color:#7D766C">Scene levels are examples. Final scenes follow the lighting Designer's design.</p></section>
  <section style="flex-grow:1;display:flex;flex-direction:column"><h2 class="sec" style="margin-bottom:16px">AT A GLANCE</h2><div style="flex-grow:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
  <button class="card" data-a="go" data-v="clim" style="padding:24px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;color:#F3EEE8"><span style="font-size:16px;color:#A8A096">Climate &middot; Living</span><span style="font-size:64px;font-weight:300;line-height:1">${S.ac.living.on?S.ac.living.set+'°':'Off'}<span style="font-size:22px;color:#A8A096;margin-left:10px">${S.ac.living.on?S.ac.living.mode:''}</span></span><span style="font-size:15px;color:#A8A096">Room ${S.ac.living.room.toFixed(1)}°</span></button>
  <button class="card" data-a="go" data-v="curt" style="padding:24px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;color:#F3EEE8"><span style="font-size:16px;color:#A8A096">Curtains</span><span style="font-size:24px;font-weight:300;line-height:1.45">Living &middot; curtain ${cl('living').toLowerCase()}, sheer ${lbl(cs.living.sheer).toLowerCase()}<br>Bedroom &middot; curtain ${cl('bedroom').toLowerCase()}, sheer ${lbl(cs.bedroom.sheer).toLowerCase()}</span><span style="font-size:15px;color:#A8A096">Tap to adjust</span></button>
@@ -96,7 +101,7 @@ let lastW={c:null,s:null};
 function curt(){
  const r=S.cur[S.croom];const nm=S.croom==='living'?'Living room':'Bedroom';
  const cw=46+(205-46)*r.curtain/100, sw=26+(205-26)*r.sheer/100;
- const btns=(layer,cur)=>[['Open',0],['Half',50],['Close',100]].map(o=>`<button class="opt ${cur===o[1]?'on':''}" data-a="clayer" data-l="${layer}" data-v="${o[1]}" style="height:68px;font-size:19px;border-color:#34343A;${cur===o[1]?'':'background:#202024'}">${o[0]}</button>`).join('');
+ const btns=(layer,cur)=>[['Open','open',cur===0],['Half','half',cur===50],['Close','close',cur>=100]].map(o=>`<button class="opt ${o[2]?'on':''}" data-a="clayer" data-l="${layer}" data-v="${o[1]}" style="height:68px;font-size:19px;border-color:#34343A;${o[2]?'':'background:#202024'}">${o[0]}</button>`).join('');
  const box=(t,sub,layer,cur)=>`<section class="card" style="padding:20px;flex-grow:1;display:flex;flex-direction:column;justify-content:space-between"><div><div style="font-size:24px;font-weight:400">${t}</div><div style="font-size:15px;color:#A8A096;margin-top:4px">${sub}</div></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">${btns(layer,cur)}</div></section>`;
  const lc=lastW.c===null?cw:lastW.c, ls=lastW.s===null?sw:lastW.s;
  const h=`<main style="flex-grow:1;box-sizing:border-box;padding:44px 48px 36px;display:flex;flex-direction:column;gap:24px">
@@ -142,11 +147,13 @@ function render(){
  const s2=document.getElementById('chs');if(s2)s2.scrollTop=st;
  if(after)requestAnimationFrame(()=>requestAnimationFrame(after));
  try{if(location.hash!=='#'+S.page)history.replaceState(null,'','#'+S.page)}catch(e){}
+ const gi=document.getElementById('gin');if(gi){gi.focus();gi.select();gi.addEventListener('keydown',e=>{if(e.key==='Enter'){saveGuest(gi.value)}else if(e.key==='Escape'){S.editing=false;render()}});gi.addEventListener('blur',()=>{if(S.editing)saveGuest(gi.value)})}
 }
 const cl=(n,a,b)=>Math.max(a,Math.min(b,n));
 const tvs=()=>S.sets[S.tv];
 const H={
  go:v=>{S.page=v},tg:v=>{const o=!S[v];S.dnd=false;S.mur=false;S[v]=o},scene:v=>{S.scene=v},
+ gedit:()=>{S.editing=true},
  ztog:v=>{const z=S.zones.find(x=>x.id===v);z.on=!z.on},
  zdim:v=>{const z=S.zones.find(x=>x.id===v);z.on=true;z.level=Math.max(10,z.level-10)},
  zbri:v=>{const z=S.zones.find(x=>x.id===v);z.on=true;z.level=Math.min(100,z.level+10)},
@@ -155,7 +162,7 @@ const H={
  czone:v=>{S.czone=v},tminus:()=>{const c=S.ac[S.czone];c.on=true;c.set=Math.max(18,c.set-1)},tplus:()=>{const c=S.ac[S.czone];c.on=true;c.set=Math.min(30,c.set+1)},
  acpow:()=>{const c=S.ac[S.czone];c.on=!c.on},acmode:v=>{const c=S.ac[S.czone];c.mode=v;c.on=true},acspeed:v=>{S.ac[S.czone].speed=v},fan:v=>{S.fans[v]=!S.fans[v]},
  croom:v=>{S.croom=v;lastW={c:null,s:null}},
- clayer:(v,e)=>{S.cur[S.croom][e.dataset.l]=+v},cpreset:(v,e)=>{S.cur[S.croom]={curtain:+e.dataset.c,sheer:+e.dataset.s}},
+ clayer:(v,e)=>{const L=e.dataset.l,k=L==='curtain'?'c':'s',mn=L==='curtain'?46:26,r=S.cur[S.croom];if(v==='open')r[L]=0;else if(v==='close')r[L]=100;else if(v==='half')r[L]=50;else{const el=document.querySelector('.w[data-k="'+k+'"]');if(el){const w=parseFloat(getComputedStyle(el).width);r[L]=Math.min(99,Math.max(1,Math.round((w-mn)/(205-mn)*100)));lastW[k]=w;}}},cpreset:(v,e)=>{S.cur[S.croom]={curtain:+e.dataset.c,sheer:+e.dataset.s}},
  tvroom:v=>{S.tv=v},tvpow:()=>{tvs().on=!tvs().on},tvsrc:v=>{Object.assign(tvs(),{on:true,source:v})},tvch:v=>{Object.assign(tvs(),{on:true,source:'Live TV',ch:+v})},
  vdn:()=>{const c=tvs();c.vol=Math.max(0,c.vol-5);c.muted=false},vup:()=>{const c=tvs();c.vol=Math.min(100,c.vol+5);c.muted=false},mute:()=>{tvs().muted=!tvs().muted}
 };
